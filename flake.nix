@@ -52,6 +52,7 @@
             enable = lib.mkEnableOption "bell audio reminder service";
             resourcesDir = lib.mkOption {
               type = lib.types.str;
+              default = "${self.packages.${pkgs.stdenv.hostPlatform.system}.default}/share/bell/resources";
               description = "Path to directory containing audio files";
             };
             user = lib.mkOption {
