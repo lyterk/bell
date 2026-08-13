@@ -291,7 +291,39 @@ environment.XDG_RUNTIME_DIR = "/run/user/${toString config.users.users.${config.
 #+end_src
 
 Or run as your regular user instead of a dedicated system user, which simplifies audio access considerably.
+** nixos resources dir not found
+:PROPERTIES:
+:ID:       8838e3cc-1b2e-4434-9323-016e1ae7e1c6
+:END:
+#+BEGIN_QUOTE
+My resources directory isn't found. I think there might be a nesting issue, in the flake it's at 
+              default = "${self.packages.${pkgs.stdenv.hostPlatform.system}.default}/share/bell/resources";
+
+              but in the rust code it's in
+                let entries: Vec<_> = fs::read_dir("resources/")?
+
+        That seems duplicative.
+#+END_QUOTE
+*** Response :ai:
+:PROPERTIES:
+:ID:       ec66b05a-ee53-48f5-91c6-d4ecf66545c5
+:END:
+
+
+Yes. The service's =WorkingDirectory= is set to =config.services.bell.resourcesDir=, which is already the full path to the resources directory. Then the Rust code does =fs::read_dir("resources/")= — looking for a subdirectory called =resources/= inside that directory.
+
+Fix the Rust code to use ="."= instead:
+
+#+begin_src rust
+let entries: Vec<_> = fs::read_dir(".")?
+#+end_src
+
+Or make it configurable via an env var/arg. But ="."= is the simplest fix given the =WorkingDirectory= setup.
 * Fixing errors
+:PROPERTIES:
+:ID:       727b6537-3005-4c9b-a236-790503a9acc5
+:END:
+** Compilation Errors
 :PROPERTIES:
 :ID:       c8d923fb-6503-46ed-ba7a-417e11605e37
 :END:
@@ -409,6 +441,69 @@ Key fixes:
 - Added =use rodio::{DeviceTrait, OutputStream, Sink}= — rodio 0.22 moved these; you may need to check the exact path. If =DeviceTrait= isn't needed, try =use rodio::{OutputStream, Sink}= and see if it resolves via re-exports
 
 If =OutputStream=/=Sink= still don't resolve, check with =cargo doc --open= what rodio 0.22.2 actually exports — the API changed significantly in recent versions.
+** No Sound Playing
+:PROPERTIES:
+:ID:       165e0ed9-4f93-4f64-896b-7a20e36fd423
+:END:
+#+BEGIN_QUOTE
+This is installed successfully, and is logging successful plays. No sound is emitted though. Is there a sink problem or something I could check?
+#+END_QUOTE
+*** Response :ai:
+:PROPERTIES:
+:ID:       f788a2b1-2673-4b1a-a8c5-8e83ac9b54d8
+:END:
+
+
+Since it's a systemd service running as a dedicated =bell= user, the most common issue is that ALSA/PipeWire isn't accessible from that user context.
+
+*Things to check:*
+
+1. *Check if the bell user can see audio devices:*
+#+begin_src bash
+sudo -u bell aplay -l
+#+end_src
+
+2. *PipeWire socket access* — your service has:
+#+begin_src nix
+XDG_RUNTIME_DIR = "/run/user/1000";
+#+end_src
+This hardcodes user 1000's runtime dir. Check if that's actually =lyterk=:
+#+begin_src bash
+id lyterk  # confirm uid is 1000
+#+end_src
+And whether the bell user can read that socket:
+#+begin_src bash
+ls -la /run/user/1000/pipewire-0
+#+end_src
+
+3. *Check service logs for audio errors:*
+#+begin_src bash
+journalctl -u bell -n 50
+#+end_src
+
+4. *Better fix* — run bell as your actual user instead of a system user. In your =configuration.nix=:
+#+begin_src nix
+services.bell = {
+  enable = true;
+  user = "lyterk";
+};
+#+end_src
+And in the flake module, set =XDG_RUNTIME_DIR= dynamically:
+#+begin_src nix
+environment = {
+  XDG_RUNTIME_DIR = "/run/user/${toString config.users.users.${config.services.bell.user}.uid}";
+};
+#+end_src
+
+The simplest fix is probably just setting =user = "lyterk"= so it shares the same PipeWire session.
+
+*** Changing the user didn't work
+#+BEGIN_QUOTE
+Changing the user in the service didn't work.
+I see the error 
+       - Exactly one of users.users.lyterk.isSystemUser and users.users.lyterk.isNormalUser must be set.
+
+#+END_QUOTE
 * Rodio API
 :PROPERTIES:
 :ID:       b1d17ae8-1754-4722-b591-ab153d932d0e

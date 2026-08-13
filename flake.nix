@@ -63,35 +63,16 @@
           };
 
           config = lib.mkIf config.services.bell.enable {
-            users.users.${config.services.bell.user} = {
-              isSystemUser = true;
-              group = config.services.bell.user;
-              extraGroups = [ "audio" ];
-            };
-            users.groups.${config.services.bell.user} = { };
 
             systemd.services.bell = {
               description = "Bell audio reminder";
-              wantedBy = [ "multi-user.target" ];
-              after = [
-                "sound.target"
-                "network.target"
-              ];
+              wantedBy = [ "default.target" ];
 
               serviceConfig = {
                 ExecStart = "${self.packages.${pkgs.system}.default}/bin/bell";
                 WorkingDirectory = config.services.bell.resourcesDir;
-                User = config.services.bell.user;
                 Restart = "always";
                 RestartSec = "5s";
-
-                # Allow audio access
-                SupplementaryGroups = [ "audio" ];
-              };
-
-              environment = {
-                # Needed for rodio/alsa to find audio devices
-                XDG_RUNTIME_DIR = "/run/user/1000";
               };
             };
           };
