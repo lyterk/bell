@@ -69,12 +69,12 @@ fn main() {
         );
         thread::sleep(Duration::from_secs(wait_secs));
 
-        if is_quiet_hours() {
-            info!("Quiet hours (11pm–7am), skipping bell.");
-        } else {
-            if let Err(e) = play_random_file() {
-                error!("Error playing file: {}", e);
-            }
+        // if is_quiet_hours() {
+        //     info!("Quiet hours (11pm–7am), skipping bell.");
+        // } else {
+        if let Err(e) = play_random_file() {
+            error!("Error playing file: {}", e);
         }
+        // }
     }
 }
