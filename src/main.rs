@@ -56,7 +56,7 @@ fn main() {
         .init();
 
     let exp = Exp::new(1.0f64).expect("Failed to create exponential distribution");
-    let thirty_minutes_secs = 30.0 * 60.0;
+    let thirty_minutes_secs = 1.0 * 60.0;
 
     loop {
         let sample = exp.sample(&mut rand::rng());
