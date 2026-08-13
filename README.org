@@ -1,0 +1,7 @@
+#+title: Readme
+
+* What it is
+Rings a bell at a rate set by an exponential distribution
+* Attribution
+Idea created by Eric Cheek
+
