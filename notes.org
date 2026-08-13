@@ -243,11 +243,43 @@ This avoids hardcoding =/var/lib/bell= and uses whatever is in the repo.
 :PROPERTIES:
 :ID:       509d546a-3db6-4cad-b57d-a5ca5d93b06e
 :END:
+#+BEGIN_QUOTE
+Help me create that installPhase. Provide your answer as a diff.
+#+END_QUOTE
 *** Response :ai:
 :PROPERTIES:
 :ID:       6cc2b310-bc80-4e56-b685-1e421fde9cac
 :END:
 
+
+Looking at the code, the =play_random_file= function uses a hardcoded ="resources/"= relative path, and the systemd service sets =WorkingDirectory= to =resourcesDir=. So the binary expects to find =resources/= relative to its working directory.
+
+But if you want to embed audio files into the package itself, you'd need an =installPhase=. Here's a diff:
+
+#+begin_src diff
+--- a/flake.nix
++++ b/flake.nix
+@@ -30,6 +30,13 @@
+           nativeBuildInputs = [ pkgs.pkg-config ];
+           buildInputs = [ pkgs.alsa-lib ];
++
++          postInstall = ''
++            mkdir -p $out/share/bell/resources
++            cp -r resources/* $out/share/bell/resources/
++          '';
+         };
+       }
+     )
+@@ -81,7 +81,7 @@
+             systemd.services.bell = {
+               serviceConfig = {
+                 ExecStart = "${self.packages.${pkgs.system}.default}/bin/bell";
+-                WorkingDirectory = config.services.bell.resourcesDir;
++                WorkingDirectory = "${self.packages.${pkgs.system}.default}/share/bell";
+                 User = config.services.bell.user;
+#+end_src
+
+This assumes your audio files live in =resources/= in the repo. If instead =resourcesDir= is meant to be a mutable runtime directory (user-managed audio files), keep =WorkingDirectory= as-is and drop the =postInstall= — the current setup already handles that case correctly.
 
 
 ** Audio notes
