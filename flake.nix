@@ -31,6 +31,11 @@
 
           nativeBuildInputs = [ pkgs.pkg-config ];
           buildInputs = [ pkgs.alsa-lib ];
+
+          postInstall = ''
+            mkdir -p $out/share/bell/resources
+            cp -r resources/* $out/share/bell/resources/
+          '';
         };
       }
     )

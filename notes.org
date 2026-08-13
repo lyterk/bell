@@ -186,7 +186,7 @@ Here's what you need:
 
 #+begin_src nix
 {
-  inputs.bell.url = "path:/path/to/bell"; # or github:you/bell
+  inputs.bell.url = "github:lyterk/bell"; # or github:you/bell
 
   outputs = { self, nixpkgs, bell }: {
     nixosConfigurations.mymachine = nixpkgs.lib.nixosSystem {
@@ -204,6 +204,51 @@ Here's what you need:
   };
 }
 #+end_src
+* Resources Dir Feedback
+:PROPERTIES:
+:ID:       ae0d7888-5774-47f2-bc05-69a1a9d30487
+:END:
+
+#+BEGIN_QUOTE
+This nix configuration hardcodes the resources dir to /var/lib/bell. I already provided it in the repo, is that possible to use?
+#+END_QUOTE
+** Response :ai:
+:PROPERTIES:
+:ID:       2c17fb38-aa6a-41ae-a0be-a4ea1eca4e29
+:END:
+
+
+Yes, you can reference the package's resources directory directly using the Nix store path. In your NixOS module, you'd set =resourcesDir= to ="${bell.packages.${system}.default}/resources"= (or similar), which points to the =resources/= directory as it's bundled in the package.
+
+For this to work, the =resources/= directory needs to be included when building the package (i.e., copied in your =installPhase= or via =src=). If your =flake.nix= builds with something like:
+
+#+begin_src nix
+installPhase = ''
+  install -Dm755 target/release/bell $out/bin/bell
+  cp -r resources $out/resources
+'';
+#+end_src
+
+Then you can reference it as:
+
+#+begin_src nix
+services.bell = {
+  enable = true;
+  resourcesDir = "${bell.packages.x86_64-linux.default}/resources";
+};
+#+end_src
+
+This avoids hardcoding =/var/lib/bell= and uses whatever is in the repo.
+** Followup
+:PROPERTIES:
+:ID:       509d546a-3db6-4cad-b57d-a5ca5d93b06e
+:END:
+*** Response :ai:
+:PROPERTIES:
+:ID:       6cc2b310-bc80-4e56-b685-1e421fde9cac
+:END:
+
+
 
 ** Audio notes
 
