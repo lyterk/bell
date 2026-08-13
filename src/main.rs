@@ -14,7 +14,7 @@ fn is_quiet_hours() -> bool {
 }
 
 fn play_random_file() -> Result<(), Box<dyn std::error::Error>> {
-    let entries: Vec<_> = fs::read_dir("resources/")?
+    let entries: Vec<_> = fs::read_dir(".")?
         .filter_map(|e| e.ok())
         .filter(|e| e.path().is_file())
         .collect();
