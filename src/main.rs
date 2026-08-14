@@ -56,11 +56,15 @@ fn main() {
         .init();
 
     let exp = Exp::new(1.0f64).expect("Failed to create exponential distribution");
-    let thirty_minutes_secs = 1.0 * 60.0;
+    let interval_mins: f64 = std::env::var("BELL_INTERVAL_MINUTES")
+        .ok()
+        .and_then(|v| v.parse().ok())
+        .unwrap_or(30.0);
+    let interval_secs = interval_mins * 60.0;
 
     loop {
         let sample = exp.sample(&mut rand::rng());
-        let wait_secs = (sample * thirty_minutes_secs) as u64;
+        let wait_secs = (sample * interval_secs) as u64;
 
         info!(
             "Next bell in {} seconds ({:.1} minutes)",
@@ -69,12 +73,12 @@ fn main() {
         );
         thread::sleep(Duration::from_secs(wait_secs));
 
-        // if is_quiet_hours() {
-        //     info!("Quiet hours (11pm–7am), skipping bell.");
-        // } else {
-        if let Err(e) = play_random_file() {
-            error!("Error playing file: {}", e);
+        if is_quiet_hours() {
+            info!("Quiet hours (11pm–7am), skipping bell.");
+        } else {
+            if let Err(e) = play_random_file() {
+                error!("Error playing file: {}", e);
+            }
         }
-        // }
     }
 }

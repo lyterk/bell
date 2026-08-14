@@ -55,6 +55,11 @@
               default = "${self.packages.${pkgs.stdenv.hostPlatform.system}.default}/share/bell/resources";
               description = "Path to directory containing audio files";
             };
+            intervalMinutes = lib.mkOption {
+              type = lib.types.int;
+              default = 30;
+              description = "Average interval in minutes between bells";
+            };
             user = lib.mkOption {
               type = lib.types.str;
               default = "bell";
@@ -71,6 +76,7 @@
               serviceConfig = {
                 ExecStart = "${self.packages.${pkgs.stdenv.hostPlatform.system}.default}/bin/bell";
                 WorkingDirectory = config.services.bell.resourcesDir;
+                Environment = "BELL_INTERVAL_MINUTES=${toString config.services.bell.intervalMinutes}";
                 Restart = "always";
                 RestartSec = "5s";
               };

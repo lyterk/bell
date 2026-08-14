@@ -1,0 +1,84 @@
+:PROPERTIES:
+:ID:       f3ba9363-7a5c-4abd-83c1-4abeca0debbb
+:END:
+#+title: Passing the average time as a parameter 
+
+* Request
+:PROPERTIES:
+:ID:       7013b105-9d9d-457a-882a-acbbd8849042
+:END:
+#+BEGIN_QUOTE
+I would like to make the average interval in minutes a parameter that's passed in through the systemd unit. How would I go about that?
+#+END_QUOTE
+** Response :ai:
+:PROPERTIES:
+:ID:       de73de9b-d13e-4fa1-8f80-2289b8359f07
+:END:
+
+
+Here's how to do it:
+
+*1. Update =main.rs= to read from an env var or CLI arg:*
+
+#+begin_src diff
+--- a/src/main.rs
++++ b/src/main.rs
+@@ -43,7 +43,11 @@ fn main() {
+     let exp = Exp::new(1.0f64).expect("Failed to create exponential distribution");
+-    let thirty_minutes_secs = 1.0 * 60.0;
++    let interval_mins: f64 = std::env::var("BELL_INTERVAL_MINUTES")
++        .ok()
++        .and_then(|v| v.parse().ok())
++        .unwrap_or(30.0);
++    let interval_secs = interval_mins * 60.0;
+ 
+     loop {
+         let sample = exp.sample(&mut rand::rng());
+-        let wait_secs = (sample * thirty_minutes_secs) as u64;
++        let wait_secs = (sample * interval_secs) as u64;
+#+end_src
+
+*2. Update =flake.nix= to add the option and pass it to the service:*
+
+#+begin_src diff
+--- a/flake.nix
++++ b/flake.nix
+@@ -60,6 +60,12 @@
+             resourcesDir = lib.mkOption {
+               type = lib.types.str;
+               default = "...";
+             };
++            intervalMinutes = lib.mkOption {
++              type = lib.types.int;
++              default = 30;
++              description = "Average interval in minutes between bells";
++            };
+             user = lib.mkOption {
+               type = lib.types.str;
+               default = "bell";
+@@ -72,6 +78,7 @@
+               serviceConfig = {
+                 ExecStart = "...";
+                 WorkingDirectory = config.services.bell.resourcesDir;
++                Environment = "BELL_INTERVAL_MINUTES=${toString config.services.bell.intervalMinutes}";
+                 Restart = "always";
+                 RestartSec = "5s";
+               };
+#+end_src
+
+*3. Set it in your configuration:*
+
+#+begin_src diff
+--- a/hosts/miranda/configuration.nix
++++ b/hosts/miranda/configuration.nix
+@@ -services.bell
+     bell = {
+       enable = true;
+       user = "lyterk";
++      intervalMinutes = 20;
+     };
+#+end_src
+
+#+begin_src elisp
+(setq gptel-context '(()))
+#+end_src

@@ -592,3 +592,4 @@ Key changes:
 - =Sink::try_new(&stream_handle)= → =Player::connect_new(&handle.mixer())=
 - =Decoder::new(...)= → =Decoder::try_from(...)=
 - =sink.append= / =sink.sleep_until_end= → =player.append= / =player.sleep_until_end
+* [[id:f3ba9363-7a5c-4abd-83c1-4abeca0debbb][Passing the average time as a parameter]]
