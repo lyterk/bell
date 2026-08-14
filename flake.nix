@@ -64,12 +64,12 @@
 
           config = lib.mkIf config.services.bell.enable {
 
-            systemd.services.bell = {
+            systemd.user.services.bell = {
               description = "Bell audio reminder";
               wantedBy = [ "default.target" ];
 
               serviceConfig = {
-                ExecStart = "${self.packages.${pkgs.system}.default}/bin/bell";
+                ExecStart = "${self.packages.${pkgs.stdenv.hostPlatform.system}.default}/bin/bell";
                 WorkingDirectory = config.services.bell.resourcesDir;
                 Restart = "always";
                 RestartSec = "5s";
